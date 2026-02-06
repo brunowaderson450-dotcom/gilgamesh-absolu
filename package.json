@@ -1,15 +1,19 @@
 {
   "name": "gilgamesh-absolu",
   "version": "1.0.0",
+  "description": "Roi de WOC",
   "main": "main.js",
   "scripts": {
     "start": "node main.js"
   },
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
-    "@whiskeysockets/baileys": "latest",
+    "@whiskeysockets/baileys": "6.6.0",
     "pino": "^9.0.0",
-    "fs-extra": "^11.0.0",
-    "link-preview-js": "^3.0.0"
+    "fs-extra": "^11.0.0"
   }
 }
+ 
