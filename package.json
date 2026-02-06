@@ -1,0 +1,12 @@
+{
+  "name": "gilgamesh-absolute",
+  "version": "10.0.0",
+  "main": "main.js",
+  "scripts": { "start": "node main.js" },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@whiskeysockets/baileys": "latest",
+    "pino": "^9.0.0",
+    "fs-extra": "^11.0.0"
+  }
+}
