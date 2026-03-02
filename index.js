@@ -331,6 +331,10 @@ async function autoLearn(sender, text) {
     } catch (err) {}
 }
 
+// Faux serveur HTTP pour Render
+const http = require('http');
+http.createServer((req, res) => res.end('Gilgamesh en ligne 👑')).listen(process.env.PORT || 3000);
+
 // Lance tout
 Promise.all([
     startGilgamesh(),
