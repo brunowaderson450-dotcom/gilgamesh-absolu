@@ -12,11 +12,11 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const PERE = "50937407719";
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 
-const Goal     = mongoose.model('Goal');
-const Learning = mongoose.model('Learning');
-const Decision = mongoose.model('Decision');
-const Journal  = mongoose.model('Journal');
-const Emotion  = mongoose.model('Emotion');
+const Goal     = mongoose.model('Goal',     new mongoose.Schema({ goal: String, status: { type: String, default: 'active' }, createdBy: { type: String, default: 'Gilgamesh' }, timestamp: { type: Date, default: Date.now } }));
+const Learning = mongoose.model('Learning', new mongoose.Schema({ type: String, content: String, context: String, occurrences: { type: Number, default: 1 }, timestamp: { type: Date, default: Date.now } }));
+const Decision = mongoose.model('Decision', new mongoose.Schema({ decision: String, reason: String, action: String, status: { type: String, default: 'noted' }, timestamp: { type: Date, default: Date.now } }));
+const Journal  = mongoose.model('Journal',  new mongoose.Schema({ entry: String, mood: String, timestamp: { type: Date, default: Date.now } }));
+const Emotion  = mongoose.model('Emotion',  new mongoose.Schema({ userId: String, username: String, emotion: { type: String, default: 'neutre' }, score: { type: Number, default: 50 }, events: [String], lastSeen: Date, totalMessages: { type: Number, default: 0 } }));
 
 async function startBrain() {
     console.log("🧠 Cerveau de Gilgamesh s'éveille...");
