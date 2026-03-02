@@ -24,13 +24,14 @@ const VIP   = [PERE, SONN, PDG, NOVA];
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 
 // Modèles MongoDB
-const Memory   = mongoose.model('Memory',   new mongoose.Schema({ userId: String, role: String, content: String, timestamp: { type: Date, default: Date.now } }));
-const Emotion  = mongoose.model('Emotion',  new mongoose.Schema({ userId: String, username: String, emotion: { type: String, default: 'neutre' }, score: { type: Number, default: 50 }, events: [String], lastSeen: Date, totalMessages: { type: Number, default: 0 } }));
-const Admin    = mongoose.model('Admin',    new mongoose.Schema({ _id: String, rang: Number, taff: String, lastAction: Date, warnings: { type: Number, default: 0 } }));
-const Learning = mongoose.model('Learning', new mongoose.Schema({ type: String, content: String, context: String, occurrences: { type: Number, default: 1 }, timestamp: { type: Date, default: Date.now } }));
-const Decision = mongoose.model('Decision', new mongoose.Schema({ decision: String, reason: String, action: String, status: { type: String, default: 'noted' }, timestamp: { type: Date, default: Date.now } }));
-const Goal     = mongoose.model('Goal',     new mongoose.Schema({ goal: String, status: { type: String, default: 'active' }, createdBy: { type: String, default: 'Gilgamesh' }, timestamp: { type: Date, default: Date.now } }));
-const Journal  = mongoose.model('Journal',  new mongoose.Schema({ entry: String, mood: String, timestamp: { type: Date, default: Date.now } }));
+const m = mongoose.models;
+const Memory   = m.Memory   || mongoose.model('Memory',   new mongoose.Schema({ userId: String, role: String, content: String, timestamp: { type: Date, default: Date.now } }));
+const Emotion  = m.Emotion  || mongoose.model('Emotion',  new mongoose.Schema({ userId: String, username: String, emotion: { type: String, default: 'neutre' }, score: { type: Number, default: 50 }, events: [String], lastSeen: Date, totalMessages: { type: Number, default: 0 } }));
+const Admin    = m.Admin    || mongoose.model('Admin',    new mongoose.Schema({ _id: String, rang: Number, taff: String, lastAction: Date, warnings: { type: Number, default: 0 } }));
+const Learning = m.Learning || mongoose.model('Learning', new mongoose.Schema({ type: String, content: String, context: String, occurrences: { type: Number, default: 1 }, timestamp: { type: Date, default: Date.now } }));
+const Decision = m.Decision || mongoose.model('Decision', new mongoose.Schema({ decision: String, reason: String, action: String, status: { type: String, default: 'noted' }, timestamp: { type: Date, default: Date.now } }));
+const Goal     = m.Goal     || mongoose.model('Goal',     new mongoose.Schema({ goal: String, status: { type: String, default: 'active' }, createdBy: { type: String, default: 'Gilgamesh' }, timestamp: { type: Date, default: Date.now } }));
+const Journal  = m.Journal  || mongoose.model('Journal',  new mongoose.Schema({ entry: String, mood: String, timestamp: { type: Date, default: Date.now } }));
 
 const models = { Memory, Emotion, Admin, Learning, Decision, Goal, VIP, PERE, SONN, PDG, NOVA };
 
