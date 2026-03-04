@@ -21,7 +21,11 @@ const Emotion  = mongoose.model('Emotion',  new mongoose.Schema({ userId: String
 async function startBrain() {
     console.log("🧠 Cerveau de Gilgamesh s'éveille...");
 
-    await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 30000 });
+    if (mongoose.connection.readyState === 0) {
+        await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 30000 });
+    }
+    // Attendre que la connexion soit vraiment prête
+    await new Promise(r => setTimeout(r, 2000));
     console.log("🔱 Cerveau connecté.");
 
     // Goals initiaux
