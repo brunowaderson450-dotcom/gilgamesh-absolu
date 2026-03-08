@@ -44,9 +44,10 @@ const WebCacheSchema = new mongoose.Schema({
     timestamp: { type: Date, default: Date.now }
 });
 
-const GateCommand = mongoose.model('GateCommand', GateCommandSchema);
-const UpdateLog   = mongoose.model('UpdateLog', UpdateLogSchema);
-const WebCache    = mongoose.model('WebCache', WebCacheSchema);
+// ✅ FIX: mongoose.models.X || ... pour éviter "Cannot overwrite model"
+const GateCommand = mongoose.models.GateCommand || mongoose.model('GateCommand', GateCommandSchema);
+const UpdateLog   = mongoose.models.UpdateLog   || mongoose.model('UpdateLog',   UpdateLogSchema);
+const WebCache    = mongoose.models.WebCache    || mongoose.model('WebCache',    WebCacheSchema);
 
 // ════════════════════════════════
 // DOUBLE IA — LLAMA PROPOSE, DEEPSEEK VÉRIFIE
@@ -54,7 +55,6 @@ const WebCache    = mongoose.model('WebCache', WebCacheSchema);
 async function doubleAIGenerate(instruction, context = '') {
     console.log("🧠 Llama génère le code...");
 
-    // ÉTAPE 1 : Llama génère
     const step1 = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
         messages: [{
@@ -83,7 +83,6 @@ Génère le code JavaScript.`
 
     console.log("🔍 DeepSeek vérifie le code...");
 
-    // ÉTAPE 2 : DeepSeek vérifie et corrige
     const step2 = await groq.chat.completions.create({
         model: "deepseek-r1-distill-llama-70b",
         messages: [{
@@ -105,7 +104,6 @@ RÈGLES :
 
     let verifiedCode = step2.choices[0].message.content.trim();
     verifiedCode = verifiedCode.replace(/^```(javascript|js)?/gm, '').replace(/```$/gm, '').trim();
-    // Remove DeepSeek thinking tags
     verifiedCode = verifiedCode.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
 
     if (verifiedCode === 'DANGEREUX') return { success: false, code: null, reason: 'Code dangereux détecté' };
@@ -118,7 +116,6 @@ RÈGLES :
 // ════════════════════════════════
 async function webFetch(url) {
     return new Promise((resolve, reject) => {
-        // Vérifie cache d'abord
         WebCache.findOne({ url, timestamp: { $gte: new Date(Date.now() - 3600000) } })
             .then(cached => {
                 if (cached) {
@@ -134,15 +131,12 @@ async function webFetch(url) {
                     let data = '';
                     res.on('data', chunk => data += chunk);
                     res.on('end', async () => {
-                        // Nettoie le HTML
                         const clean = data
                             .replace(/<script[\s\S]*?<\/script>/gi, '')
                             .replace(/<style[\s\S]*?<\/style>/gi, '')
                             .replace(/<[^>]+>/g, ' ')
                             .replace(/\s+/g, ' ')
                             .substring(0, 5000);
-
-                        // Sauvegarde en cache
                         await WebCache.findOneAndUpdate({ url }, { content: clean, timestamp: new Date() }, { upsert: true });
                         resolve(clean);
                     });
@@ -161,7 +155,6 @@ async function selfUpdate(instruction, source = 'Pensée autonome', sock = null,
     console.log(`⚡ SELF-UPDATE : ${instruction}`);
 
     try {
-        // Cherche sur internet si nécessaire
         let webContext = '';
         if (instruction.toLowerCase().includes('hugging') || instruction.toLowerCase().includes('github') || instruction.toLowerCase().includes('npm')) {
             try {
@@ -173,7 +166,6 @@ async function selfUpdate(instruction, source = 'Pensée autonome', sock = null,
             }
         }
 
-        // Double IA génère le code
         const result = await doubleAIGenerate(instruction, webContext);
 
         if (!result.success) {
@@ -181,11 +173,9 @@ async function selfUpdate(instruction, source = 'Pensée autonome', sock = null,
             return { success: false, reason: result.reason };
         }
 
-        // Backup du gate.js actuel
         const backupPath = `./gate.js.bak.${Date.now()}`;
-        fs.copyFileSync('./gate.js', backupPath);
+        if (fs.existsSync('./gate.js')) fs.copyFileSync('./gate.js', backupPath);
 
-        // Test du code dans sandbox
         try {
             const testFn = new Function('require', 'mongoose', 'groq', `
                 "use strict";
@@ -203,7 +193,6 @@ async function selfUpdate(instruction, source = 'Pensée autonome', sock = null,
             return { success: false, reason: `Test échoué: ${testErr.message}` };
         }
 
-        // Ajoute comme nouvelle GateCommand
         await GateCommand.create({
             name: `auto_${Date.now()}`,
             trigger: instruction.substring(0, 30),
@@ -250,7 +239,7 @@ async function installPackage(packageName) {
 }
 
 // ════════════════════════════════
-// CRÉER BOT SOLDAT (fichier standalone)
+// CRÉER BOT SOLDAT
 // ════════════════════════════════
 async function createSoldierBot(mission, botName) {
     console.log(`⚔️ Création bot soldat: ${botName}`);
