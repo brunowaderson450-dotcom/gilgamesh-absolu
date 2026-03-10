@@ -81,7 +81,7 @@ async function startGilgamesh() {
             const result = await new Promise((res, rej) => zlib.gunzip(buf, (e, r) => e ? rej(e) : res(r)));
             const data   = JSON.parse(result.toString());
             fs.mkdirSync('auth_session', { recursive: true });
-            fs.writeFileSync('auth_session/creds.json', JSON.stringify(data.creds || data));
+            Object.entries(data).forEach(([k, v]) => fs.writeFileSync(`auth_session/${k}.json`, JSON.stringify(v)));
             console.log('✅ Session chargée depuis SESSION_ID.');
         } catch (e) {
             console.warn('⚠️ SESSION_ID invalide:', e.message);
