@@ -9,7 +9,25 @@ const Groq   = require('groq-sdk');
 const mongoose = require('mongoose');
 const pino   = require('pino');
 const { startBrain } = require('./brain');
-const { selfUpdate, webFetch, createSoldierBot, executeGateCommand, GateCommand, UpdateLog } = require('./gate');
+
+// ✅ FIX: gate.js protégé — si absent, commandes avancées désactivées sans crash
+let selfUpdate, webFetch, createSoldierBot, executeGateCommand, GateCommand, UpdateLog;
+try {
+    ({ selfUpdate, webFetch, createSoldierBot, executeGateCommand, GateCommand, UpdateLog } = require('./gate'));
+} catch (e) {
+    console.warn('⚠️  gate.js introuvable — /evolve /web /soldat /gate désactivés.');
+    executeGateCommand = async () => false;
+    selfUpdate        = async () => ({ success: false, reason: 'gate.js absent' });
+    webFetch          = async () => { throw new Error('gate.js absent'); };
+    createSoldierBot  = async () => null;
+    class _Fake {
+        static find()             { return Promise.resolve([]); }
+        static create()           { return Promise.resolve({}); }
+        static findOneAndUpdate() { return Promise.resolve(null); }
+    }
+    GateCommand = _Fake;
+    UpdateLog   = _Fake;
+}
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
@@ -24,14 +42,14 @@ const VIP   = [PERE, SONN, PDG, NOVA];
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 
 // Modèles MongoDB
-const m = mongoose.models;
-const Memory   = m.Memory   || mongoose.model('Memory',   new mongoose.Schema({ userId: String, role: String, content: String, timestamp: { type: Date, default: Date.now } }));
-const Emotion  = m.Emotion  || mongoose.model('Emotion',  new mongoose.Schema({ userId: String, username: String, emotion: { type: String, default: 'neutre' }, score: { type: Number, default: 50 }, events: [String], lastSeen: Date, totalMessages: { type: Number, default: 0 } }));
-const Admin    = m.Admin    || mongoose.model('Admin',    new mongoose.Schema({ _id: String, rang: Number, taff: String, lastAction: Date, warnings: { type: Number, default: 0 } }));
-const Learning = m.Learning || mongoose.model('Learning', new mongoose.Schema({ type: String, content: String, context: String, occurrences: { type: Number, default: 1 }, timestamp: { type: Date, default: Date.now } }));
-const Decision = m.Decision || mongoose.model('Decision', new mongoose.Schema({ decision: String, reason: String, action: String, status: { type: String, default: 'noted' }, timestamp: { type: Date, default: Date.now } }));
-const Goal     = m.Goal     || mongoose.model('Goal',     new mongoose.Schema({ goal: String, status: { type: String, default: 'active' }, createdBy: { type: String, default: 'Gilgamesh' }, timestamp: { type: Date, default: Date.now } }));
-const Journal  = m.Journal  || mongoose.model('Journal',  new mongoose.Schema({ entry: String, mood: String, timestamp: { type: Date, default: Date.now } }));
+const M = mongoose.models;
+const Memory   = M.Memory   || mongoose.model('Memory',   new mongoose.Schema({ userId: String, role: String, content: String, timestamp: { type: Date, default: Date.now } }));
+const Emotion  = M.Emotion  || mongoose.model('Emotion',  new mongoose.Schema({ userId: String, username: String, emotion: { type: String, default: 'neutre' }, score: { type: Number, default: 50 }, events: [String], lastSeen: Date, totalMessages: { type: Number, default: 0 } }));
+const Admin    = M.Admin    || mongoose.model('Admin',    new mongoose.Schema({ _id: String, rang: Number, taff: String, lastAction: Date, warnings: { type: Number, default: 0 } }));
+const Learning = M.Learning || mongoose.model('Learning', new mongoose.Schema({ type: String, content: String, context: String, occurrences: { type: Number, default: 1 }, timestamp: { type: Date, default: Date.now } }));
+const Decision = M.Decision || mongoose.model('Decision', new mongoose.Schema({ decision: String, reason: String, action: String, status: { type: String, default: 'noted' }, timestamp: { type: Date, default: Date.now } }));
+const Goal     = M.Goal     || mongoose.model('Goal',     new mongoose.Schema({ goal: String, status: { type: String, default: 'active' }, createdBy: { type: String, default: 'Gilgamesh' }, timestamp: { type: Date, default: Date.now } }));
+const Journal  = M.Journal  || mongoose.model('Journal',  new mongoose.Schema({ entry: String, mood: String, timestamp: { type: Date, default: Date.now } }));
 
 const models = { Memory, Emotion, Admin, Learning, Decision, Goal, VIP, PERE, SONN, PDG, NOVA };
 
@@ -49,6 +67,24 @@ async function startGilgamesh() {
         } catch (err) {
             console.error("❌ MongoDB:", err.message);
             process.exit(1);
+        }
+    }
+
+    // SESSION_ID loader
+    const SESSION_ID = process.env.SESSION_ID;
+    if (SESSION_ID) {
+        const zlib = require('zlib');
+        const fs   = require('fs');
+        try {
+            const b64    = SESSION_ID.replace(/^[^!]+!/,'');
+            const buf    = Buffer.from(b64,'base64');
+            const result = await new Promise((res, rej) => zlib.gunzip(buf, (e, r) => e ? rej(e) : res(r)));
+            const data   = JSON.parse(result.toString());
+            fs.mkdirSync('auth_session', { recursive: true });
+            Object.entries(data).forEach(([k, v]) => fs.writeFileSync(`auth_session/${k}.json`, JSON.stringify(v)));
+            console.log('✅ Session chargée depuis SESSION_ID.');
+        } catch (e) {
+            console.warn('⚠️ SESSION_ID invalide:', e.message);
         }
     }
 
