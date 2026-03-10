@@ -1,4 +1,4 @@
-══════════════════════════════════════╗
+// ══════════════════════════════════════╗
 // ║      GILGAMESH-ABSOLU v4.0          ║
 // ║   Corps protégé — jamais modifié    ║
 // ║   Created by Wonder of U - NEO-BOTIX║
