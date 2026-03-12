@@ -9,6 +9,7 @@ const Groq   = require('groq-sdk');
 const mongoose = require('mongoose');
 const pino   = require('pino');
 const { startBrain } = require('./brain');
+const { useMongoAuthState } = require('./auth-mongo');
 
 // ✅ FIX: gate.js protégé — si absent, commandes avancées désactivées sans crash
 let selfUpdate, webFetch, createSoldierBot, executeGateCommand, GateCommand, UpdateLog;
@@ -70,25 +71,9 @@ async function startGilgamesh() {
         }
     }
 
-    // SESSION_ID loader
-    const SESSION_ID = process.env.SESSION_ID;
-    if (SESSION_ID) {
-        const zlib = require('zlib');
-        const fs   = require('fs');
-        try {
-            const b64    = SESSION_ID.replace(/^[^!]+!/,'');
-            const buf    = Buffer.from(b64,'base64');
-            const result = await new Promise((res, rej) => zlib.gunzip(buf, (e, r) => e ? rej(e) : res(r)));
-            const data   = JSON.parse(result.toString());
-            fs.mkdirSync('auth_session', { recursive: true });
-            console.log('🔑 Clés session:', Object.keys(data)); fs.writeFileSync('auth_session/creds.json', JSON.stringify(data)); console.log('✅ Écrit: creds.json');
-            console.log('✅ Session chargée depuis SESSION_ID.');
-        } catch (e) {
-            console.warn('⚠️ SESSION_ID invalide:', e.message);
-        }
-    }
-
-    const { state, saveCreds } = await useMultiFileAuthState('auth_session');
+    // Session MongoDB
+    const { state, saveCreds } = await useMongoAuthState();
+    console.log('✅ Session MongoDB chargée. Registered:', state.creds.registered);
 
     global.sock = makeWASocket({
         auth: {
