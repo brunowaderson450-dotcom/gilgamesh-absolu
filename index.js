@@ -1,4 +1,4 @@
-// ╔══════════════════════════════════════╗
+// ═════════════════════════════════════╗
 // ║      GILGAMESH-ABSOLU v4.0          ║
 // ║   Corps protégé — jamais modifié    ║
 // ║   Created by Wonder of U - NEO-BOTIX║
@@ -363,4 +363,4 @@ Promise.all([
 ]).catch(err => {
     console.error("💀 Fatal:", err);
     process.exit(1);
-});
+})
