@@ -1,4 +1,4 @@
-// ═════════════════════════════════════╗
+// ╔══════════════════════════════════════╗
 // ║      GILGAMESH-ABSOLU v4.0          ║
 // ║   Corps protégé — jamais modifié    ║
 // ║   Created by Wonder of U - NEO-BOTIX║
@@ -71,7 +71,26 @@ async function startGilgamesh() {
         }
     }
 
-    // Session MongoDB
+    // Session MongoDB — charge KnightBot si première fois
+    const SESSION_ID = process.env.SESSION_ID;
+    if (SESSION_ID) {
+        const zlib = require('zlib');
+        const mongoose2 = mongoose;
+        const Session = mongoose2.models.Session || mongoose2.model('Session', new mongoose2.Schema({ _id: String, data: mongoose2.Schema.Types.Mixed }, { timestamps: true }));
+        const existing = await Session.findById('creds');
+        if (!existing || !existing.data || !existing.data.registered) {
+            try {
+                const b64 = SESSION_ID.replace(/^[^!]+!/, '');
+                const buf = Buffer.from(b64, 'base64');
+                const result = await new Promise((res, rej) => require('zlib').gunzip(buf, (e, r) => e ? rej(e) : res(r)));
+                const data = JSON.parse(result.toString());
+                await Session.findByIdAndUpdate('creds', { data }, { upsert: true });
+                console.log('✅ Session KnightBot importée dans MongoDB.');
+            } catch(e) {
+                console.warn('⚠️ Import session:', e.message);
+            }
+        }
+    }
     const { state, saveCreds } = await useMongoAuthState();
     console.log('✅ Session MongoDB chargée. Registered:', state.creds.registered);
 
@@ -363,4 +382,4 @@ Promise.all([
 ]).catch(err => {
     console.error("💀 Fatal:", err);
     process.exit(1);
-})
+});
